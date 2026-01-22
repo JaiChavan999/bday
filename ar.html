@@ -3,73 +3,151 @@
 <head>
     <title>Anniversary Surprise</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- A-Frame and AR.js libraries -->
+    <!-- These scripts are loaded first -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://jaichavan999.github.io/bday/wishes.js"></script>
     <style>
         body { margin: 0; overflow: hidden; }
-        #ar-scene { display: none; }
-        #start-button-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #2c3e50; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; color: white; font-family: sans-serif; text-align: center; padding: 1em; }
-        #start-button { font-size: 1.5em; padding: 15px 30px; border-radius: 10px; border: none; background-color: #007bff; color: white; cursor: pointer; margin-top: 1em;}
+        #start-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
+            padding: 1em;
+        }
+        #start-button {
+            font-size: 1.5em;
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin-top: 1em;
+        }
     </style>
 </head>
 <body>
 
-    <div id="start-button-container">
-        <h1>Surprise!</h1>
-        <button id="start-button">Start Camera</button>
+    <!-- This is the only thing visible on page load -->
+    <div id="start-container">
+        <h1>Anniversary Surprise</h1>
+        <p>Tap the button below to start the camera.</p>
+        <button id="start-button">Start Experience</button>
     </div>
 
-    <!-- The AR scene is defined but hidden -->
-    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-        <a-assets>
-            <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
-        </a-assets>
-        <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
-            <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
-        </a-marker>
-        <a-entity camera></a-entity>
-    </a-scene>
+    <!-- The AR scene is completely empty and will be built by JavaScript -->
+    <div id="ar-scene-container" style="display: none;"></div>
 
     <script>
-        // --- THIS SCRIPT BLOCK IS THE FINAL FIX ---
-
-        // Function to dynamically load the wishes.js script
-        function loadWishesScript(callback) {
-            const script = document.createElement('script');
-            script.src = 'https://jaichavan999.github.io/bday/wishes.js'; // Use the full URL
-            
-            // If the script loads successfully, run the callback function
-            script.onload = () => callback(null);
-            
-            // If the script fails to load (404 error, etc.), run the callback with an error
-            script.onerror = () => callback(new Error("Network error: Could not load 'wishes.js'. Please check the file path on GitHub."));
-
-            document.head.appendChild(script);
-        }
-
         window.addEventListener('load', () => {
-            const startButtonContainer = document.querySelector('#start-button-container');
-            const arScene = document.querySelector('#ar-scene');
-
+            const startContainer = document.querySelector('#start-container');
+            const arContainer = document.querySelector('#ar-scene-container');
+            
             document.querySelector('#start-button').addEventListener('click', () => {
-                // Step 1: Load the wishes script
-                loadWishesScript((error) => {
-                    // Step 2: Check for loading errors
-                    if (error) {
-                        alert(error.message); // Show the specific loading error
-                        return;
+                // Pre-flight check for the wishes data
+                if (typeof window.wishes === 'undefined' || !Array.isArray(window.wishes)) {
+                    alert("CRITICAL ERROR: The 'wishes.js' file could not be loaded or is empty. Please check the file on GitHub.");
+                    return;
+                }
+
+                // Hide the start button
+                startContainer.style.display = 'none';
+                arContainer.style.display = 'block';
+
+                // *** THE DEFINITIVE FIX: DYNAMICALLY CREATE THE SCENE ***
+                // This forces the browser to request camera access only AFTER the user clicks.
+                const sceneEl = document.createElement('a-scene');
+                sceneEl.innerHTML = `
+                    <a-assets>
+                        <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
+                    </a-assets>
+
+                    <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
+                        <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
+                    </a-marker>
+                    
+                    <a-entity camera></a-entity>
+                `;
+                // Add the necessary AR.js attributes to the scene
+                sceneEl.setAttribute('embedded', '');
+                sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
+                
+                // Add the newly created scene to the page
+                arContainer.appendChild(sceneEl);
+
+                // Now that the scene exists, set up the marker logic
+                const marker = document.querySelector('#marker');
+                let hasAnimated = false;
+                
+                marker.addEventListener('markerFound', () => {
+                    if (!hasAnimated) {
+                        hasAnimated = true;
+                        displayWishesWithAnimation(window.wishes);
                     }
+                });
+            });
+        });
 
-                    // Step 3: Check if the 'wishes' variable inside the file is valid
-                    if (typeof window.wishes === 'undefined' || !Array.isArray(window.wishes)) {
-                        alert("Data error: 'wishes.js' loaded, but the 'wishes' variable is missing or not formatted correctly. Please check the file content.");
-                        return;
-                    }
+        // This animation function does not need to change
+        function displayWishesWithAnimation(wishArray) {
+            const marker = document.querySelector('#marker');
+            wishArray.forEach((wish, index) => {
+                setTimeout(() => {
+                    const soundEffect = document.querySelector('#sound-entity');
+                    if (soundEffect) soundEffect.components.sound.playSound();
+                }, index * 600);
 
-                    // If all checks pass, hide the button and start the AR scene
-                    startButtonContainer.style.display = 'none';
-                    arScene.style.display = 'block';
+                const angle = index * ((2 * Math.PI) / wishArray.length);
+                const wishEntity = document.createElement('a-entity');
+                wishEntity.setAttribute('position', `${2.5 * Math.cos(angle)} 0.5 ${2.5 * Math.sin(angle)}`);
+                wishEntity.setAttribute('look-at', '[camera]');
+                wishEntity.setAttribute('scale', '0 0 0');
+                wishEntity.setAttribute('animation', { property: 'scale', to: '1 1 1', dur: 1000, easing: 'easeOutElastic', delay: index * 600 });
+                
+                const plane = document.createElement('a-plane');
+                plane.setAttribute('color', '#007bff');
+                plane.setAttribute('width', '2');
+                plane.setAttribute('height', '1.2');
+                plane.setAttribute('material', { opacity: 0 });
+                plane.setAttribute('animation__fade', { property: 'material.opacity', to: 0.85, dur: 800, easing: 'easeIn', delay: index * 600 });
 
-                    const marker = document.querySelector('#marker');
-       
+                const msgText = document.createElement('a-text');
+                msgText.setAttribute('value', wish.message);
+                msgText.setAttribute('color', 'white');
+                msgText.setAttribute('align', 'center');
+                msgText.setAttribute('width', '1.8');
+                msgText.setAttribute('wrap-count', '30');
+                msgText.setAttribute('position', '0 0.2 0.1');
+                msgText.setAttribute('text', { opacity: 0 });
+                msgText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
+
+                const nameText = document.createElement('a-text');
+                nameText.setAttribute('value', `- ${wish.name}`);
+                nameText.setAttribute('color', '#ffc107');
+                nameText.setAttribute('align', 'right');
+                nameText.setAttribute('width', '1.8');
+                nameText.setAttribute('position', '0 -0.3 0.1');
+                nameText.setAttribute('text', { opacity: 0 });
+                nameText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
+
+                wishEntity.appendChild(plane);
+                wishEntity.appendChild(msgText);
+                wishEntity.appendChild(nameText);
+                marker.appendChild(wishEntity);
+            });
+        }
+    </script>
+</body>
+</html>
