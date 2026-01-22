@@ -10,15 +10,15 @@
 </head>
 <body style="margin: 0; overflow: hidden;">
     <!-- Loading Screen -->
-    <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 10000;">
-        <p style="font-family: sans-serif; font-size: 1.5em;">Please find the marker to see your messages!</p>
+    <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; text-align: center; padding: 1em;">
+        <h2 style="font-family: sans-serif;">Searching for Marker...</h2>
+        <p style="font-family: sans-serif; font-size: 1em;">Point your camera at the anniversary marker to reveal your messages!</p>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
 
-        <!-- The Marker -->
-        <!-- This uses a preset "HIRO" marker. You must print this marker image. -->
-        <a-marker preset="hiro" id="marker">
+        <!-- Use your custom marker or the hiro preset -->
+        <a-marker type="pattern" url="pattern-custom-marker.patt" id="marker">
             <!-- Wishes will be dynamically added here by the script -->
         </a-marker>
 
@@ -30,60 +30,101 @@
         window.onload = () => {
             const marker = document.getElementById('marker');
             const loadingOverlay = document.getElementById('loading-overlay');
+            let hasAnimated = false; // Flag to prevent re-animation
 
-            // Hide loading screen when marker is first found
+            // When the marker is found for the first time
             marker.addEventListener('markerFound', () => {
                 if (loadingOverlay) {
                     loadingOverlay.style.display = 'none';
                 }
-                // Check if wishes have been loaded to prevent re-drawing
-                if (marker.children.length === 0) {
-                    displayWishes(wishes);
+                
+                // Only run the animation once
+                if (!hasAnimated) {
+                    hasAnimated = true;
+                    displayWishesWithAnimation(wishes);
                 }
             });
         };
 
-        function displayWishes(wishArray) {
+        function displayWishesWithAnimation(wishArray) {
             const marker = document.getElementById('marker');
-            const radius = 2.5; // Circle radius
+            const radius = 2.5; // The radius of the circle
             const angleStep = (2 * Math.PI) / wishArray.length;
+            const animationDelay = 600; // ms between each wish appearing
 
             wishArray.forEach((wish, index) => {
                 const angle = index * angleStep;
                 const x = radius * Math.cos(angle);
                 const z = radius * Math.sin(angle);
 
-                // Create a container for the wish
+                // 1. CREATE THE WISH ENTITY
                 const wishEntity = document.createElement('a-entity');
                 wishEntity.setAttribute('position', `${x} 0.5 ${z}`);
-                
-                // Make the entity always face the camera
                 wishEntity.setAttribute('look-at', '[camera]');
 
-                // Background plane
+                // 2. SET INITIAL STATE (INVISIBLE)
+                wishEntity.setAttribute('scale', '0 0 0'); // Start scaled down to 0
+                
+                // 3. DEFINE THE "POP-IN" ANIMATION
+                wishEntity.setAttribute('animation', {
+                    property: 'scale',
+                    to: '1 1 1',
+                    dur: 1000, // Duration of the pop
+                    easing: 'easeOutElastic', // A fun, bouncy easing effect
+                    delay: index * animationDelay // CRUCIAL: Staggered delay for one-by-one effect
+                });
+                
+                // Create background plane
                 const plane = document.createElement('a-plane');
                 plane.setAttribute('color', '#007bff');
                 plane.setAttribute('width', '2');
                 plane.setAttribute('height', '1.2');
-                plane.setAttribute('opacity', '0.8');
+                // Animate opacity on the plane
+                plane.setAttribute('material', 'opacity', 0);
+                plane.setAttribute('animation__fade', {
+                    property: 'material.opacity',
+                    to: 0.85,
+                    dur: 800,
+                    easing: 'easeIn',
+                    delay: index * animationDelay
+                });
 
-                // Wish message text
+                // Create wish message text
                 const msgText = document.createElement('a-text');
                 msgText.setAttribute('value', wish.message);
                 msgText.setAttribute('color', 'white');
                 msgText.setAttribute('align', 'center');
                 msgText.setAttribute('width', '1.8');
-                msgText.setAttribute('wrap-count', '30'); // Adjust for wrapping
+                msgText.setAttribute('wrap-count', '30');
                 msgText.setAttribute('position', '0 0.2 0.1');
+                // Animate opacity on the text
+                msgText.setAttribute('text', 'opacity', 0);
+                 msgText.setAttribute('animation__fade', {
+                    property: 'text.opacity',
+                    to: 1,
+                    dur: 800,
+                    easing: 'easeIn',
+                    delay: 200 + index * animationDelay // Slight delay so background appears first
+                });
 
-                // Name text
+                // Create name text
                 const nameText = document.createElement('a-text');
                 nameText.setAttribute('value', `- ${wish.name}`);
                 nameText.setAttribute('color', '#ffc107');
                 nameText.setAttribute('align', 'right');
                 nameText.setAttribute('width', '1.8');
                 nameText.setAttribute('position', '0 -0.3 0.1');
+                 // Animate opacity on the name
+                nameText.setAttribute('text', 'opacity', 0);
+                nameText.setAttribute('animation__fade', {
+                    property: 'text.opacity',
+                    to: 1,
+                    dur: 800,
+                    easing: 'easeIn',
+                    delay: 200 + index * animationDelay
+                });
 
+                // Append children and add to the marker
                 wishEntity.appendChild(plane);
                 wishEntity.appendChild(msgText);
                 wishEntity.appendChild(nameText);
@@ -93,4 +134,3 @@
     </script>
 </body>
 </html>
- 
