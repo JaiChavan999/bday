@@ -9,7 +9,7 @@
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        #hybrid-image-container {
+        #desktop-marker-container {
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -20,25 +20,24 @@
             color: #333;
             text-align: center;
         }
-        #hybrid-image-container h1 { margin-bottom: 0.5em; font-size: 2em; }
-        #hybrid-image-container p { max-width: 450px; margin-bottom: 2em; line-height: 1.5; }
-        #hybrid-image-container img {
-            width: 350px;
-            height: 350px;
+        #desktop-marker-container h1 { margin-bottom: 0.5em; }
+        #desktop-marker-container p { max-width: 400px; line-height: 1.5; }
+        #desktop-marker-container img {
+            width: 300px;
+            height: 300px;
             border: 10px solid #fff;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- UPDATED: This container will show your new hybrid image on desktops -->
-    <div id="hybrid-image-container">
-        <h1>A Special Surprise Awaits!</h1>
-        <p><strong>Step 1:</strong> Scan the QR code in the center of the image with your phone's camera to open the experience.<br><strong>Step 2:</strong> Point your phone's camera back at this same image to reveal the messages.</p>
-        <!-- IMPORTANT: Replace 'scan-me.png' with the actual name of your combined image file -->
-        <img src="qr.jpg" alt="Hybrid QR and AR Marker">
+    <div id="desktop-marker-container">
+        <h1>A Special Surprise!</h1>
+        <p><strong>Step 1:</strong> Scan the QR code with your phone.<br><strong>Step 2:</strong> Point your phone back at this marker to see the magic!</p>
+        <!-- This is your hosted image, so it's guaranteed to match the pattern file -->
+        <img src="https://jaichavan999.github.io/bday/qr.jpg" alt="AR Marker with QR Code">
     </div>
 
     <!-- The AR content will be dynamically injected here by JavaScript on mobile devices -->
@@ -46,11 +45,10 @@
 
 
     <script>
-        // This entire script remains the same as the previous version. No changes needed here.
         const isMobile = window.innerWidth <= 768;
 
         if (isMobile) {
-            document.getElementById('hybrid-image-container').classList.add('hidden');
+            document.getElementById('desktop-marker-container').classList.add('hidden');
             
             const arContainer = document.getElementById('ar-container');
 
@@ -69,6 +67,7 @@
                     document.head.appendChild(wishesScript);
                     
                     wishesScript.onload = () => {
+                        // --- HTML for the AR scene is injected here ---
                         arContainer.innerHTML = `
                             <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; text-align: center; padding: 1em;">
                                 <h2>Searching for Marker...</h2>
@@ -78,9 +77,15 @@
                                 <a-assets>
                                     <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
                                 </a-assets>
-                                <a-marker preset="hiro" id="marker">
+
+                                <!--
+                                  *** THE CRUCIAL FIX IS HERE ***
+                                  We now use type="pattern" and point the url to your new .patt file.
+                                -->
+                                <a-marker type="pattern" url="pattern-qr.patt" id="marker">
                                     <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
                                 </a-marker>
+                                
                                 <a-entity camera></a-entity>
                             </a-scene>
                         `;
@@ -123,7 +128,7 @@
                     plane.setAttribute('height', '1.2');
                     plane.setAttribute('material', 'opacity', 0);
                     plane.setAttribute('animation__fade', { property: 'material.opacity', to: 0.85, dur: 800, easing: 'easeIn', delay: index * 600 });
-
+                    
                     const msgText = document.createElement('a-text');
                     msgText.setAttribute('value', wish.message);
                     msgText.setAttribute('color', 'white');
@@ -153,4 +158,3 @@
     </script>
 </body>
 </html>
-
