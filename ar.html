@@ -3,7 +3,7 @@
 <head>
     <title>Anniversary Surprise</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- Scripts are loaded first -->
+    <!-- Scripts -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
@@ -20,24 +20,15 @@
         <button id="start-button">Start Experience</button>
     </div>
 
-    <!-- The AR scene will be created and placed here by the script -->
+    <!-- The AR scene container is initially empty -->
     <div id="ar-scene-container" style="display: none;"></div>
 
     <script>
-        // The wishes data is built-in. This is reliable.
+        // The wishes are built directly into the file. This is reliable.
         const wishes = [
-          {
-            "name": "Jaisankar",
-            "message": "Happy Anniversary! It has been an amazing year."
-          },
-          {
-            "name": "The Team",
-            "message": "Congratulations on reaching this milestone!"
-          },
-          {
-            "name": "A Friend",
-            "message": "Wishing you all the best for the years to come."
-          }
+          { "name": "Jaisankar", "message": "Happy Anniversary! It has been an amazing year." },
+          { "name": "The Team", "message": "Congratulations on reaching this milestone!" },
+          { "name": "A Friend", "message": "Wishing you all the best for the years to come." }
         ];
 
         window.addEventListener('load', () => {
@@ -48,13 +39,10 @@
                 startContainer.style.display = 'none';
                 arContainer.style.display = 'block';
 
-                // Create the scene element
                 const sceneEl = document.createElement('a-scene');
                 
-                // --- *** THE DEFINITIVE FIX IS HERE *** ---
-                // Add an event listener to wait for the A-Frame scene to be fully loaded and initialized.
+                // We add this listener to ensure the scene is 100% ready before we look for the marker.
                 sceneEl.addEventListener('loaded', () => {
-                    // Now that the scene is 100% ready, we can safely find the marker.
                     const marker = document.querySelector('#marker');
                     let hasAnimated = false;
                     
@@ -66,27 +54,27 @@
                     });
                 });
 
-                // Set the inner HTML of the scene
+                // --- *** THE CRITICAL CHANGE FOR THIS TEST *** ---
                 sceneEl.innerHTML = `
                     <a-assets>
                         <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
                     </a-assets>
-                    <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
+
+                    <!-- We are now using the default HIRO preset for testing. This removes all custom pattern file issues. -->
+                    <a-marker preset="hiro" id="marker">
                         <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
                     </a-marker>
+                    
                     <a-entity camera></a-entity>
                 `;
                 
-                // Set the AR.js attributes
                 sceneEl.setAttribute('embedded', '');
                 sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
-                
-                // Add the fully prepared scene to the page
                 arContainer.appendChild(sceneEl);
             });
         });
 
-        // This animation function is correct and does not need changes.
+        // The animation function remains the same.
         function displayWishesWithAnimation(wishArray) {
             const marker = document.querySelector('#marker');
             wishArray.forEach((wish, index) => {
@@ -94,21 +82,18 @@
                     const soundEffect = document.querySelector('#sound-entity');
                     if (soundEffect) soundEffect.components.sound.playSound();
                 }, index * 600);
-
                 const angle = index * ((2 * Math.PI) / wishArray.length);
                 const wishEntity = document.createElement('a-entity');
                 wishEntity.setAttribute('position', `${2.5 * Math.cos(angle)} 0.5 ${2.5 * Math.sin(angle)}`);
                 wishEntity.setAttribute('look-at', '[camera]');
                 wishEntity.setAttribute('scale', '0 0 0');
                 wishEntity.setAttribute('animation', { property: 'scale', to: '1 1 1', dur: 1000, easing: 'easeOutElastic', delay: index * 600 });
-                
                 const plane = document.createElement('a-plane');
                 plane.setAttribute('color', '#007bff');
                 plane.setAttribute('width', '2');
                 plane.setAttribute('height', '1.2');
                 plane.setAttribute('material', { opacity: 0 });
                 plane.setAttribute('animation__fade', { property: 'material.opacity', to: 0.85, dur: 800, easing: 'easeIn', delay: index * 600 });
-
                 const msgText = document.createElement('a-text');
                 msgText.setAttribute('value', wish.message);
                 msgText.setAttribute('color', 'white');
@@ -118,7 +103,6 @@
                 msgText.setAttribute('position', '0 0.2 0.1');
                 msgText.setAttribute('text', { opacity: 0 });
                 msgText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
-
                 const nameText = document.createElement('a-text');
                 nameText.setAttribute('value', `- ${wish.name}`);
                 nameText.setAttribute('color', '#ffc107');
@@ -127,7 +111,6 @@
                 nameText.setAttribute('position', '0 -0.3 0.1');
                 nameText.setAttribute('text', { opacity: 0 });
                 nameText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
-
                 wishEntity.appendChild(plane);
                 wishEntity.appendChild(msgText);
                 wishEntity.appendChild(nameText);
