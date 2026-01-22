@@ -1,52 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Collect Anniversary Wishes</title>
-<style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; padding: 1em; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1, h2 { color: #333; }
-        input, textarea, button { width: 100%; box-sizing: border-box; padding: 0.8em; margin-bottom: 1em; border-radius: 4px; border: 1px solid #ccc; font-size: 1em; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
-        #jsonOutput { background: #eee; border: 1px solid #ddd; padding: 1em; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
-        .instructions { background-color: #e7f3fe; border-left: 6px solid #2196F3; padding: 1em; margin-bottom: 1em; }
-</style>
+    <meta charset="UTF-8">
+    <title>Anniversary Surprise - Instructions</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f7f6; margin: 0; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 4em; background: white; padding: 3em; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .step { text-align: center; width: 350px; }
+        h1 { font-size: 2em; color: #2c3e50; }
+        p { color: #34495e; line-height: 1.6; }
+        img { width: 250px; height: 250px; }
+        .marker { border: 10px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    </style>
 </head>
 <body>
-<div class="container">
-<h1>Anniversary Wish Collector</h1>
-<form id="wishForm">
-<label for="colleagueName">Your Name:</label>
-<input type="text" id="colleagueName" required>
-<label for="wishMessage">Your Wish:</label>
-<textarea id="wishMessage" rows="4" required></textarea>
-<button type="submit">Add Wish</button>
-</form>
-<hr style="margin: 2em 0;">
-<h2>Collected Wishes (JSON)</h2>
-<div class="instructions">
-<p><strong>Instructions:</strong> After everyone has added their wish, copy the entire text from the box below and paste it into the `wishes.js` file.</p>
-</div>
-<pre id="jsonOutput">const wishes = [];</pre>
-</div>
-<script>
-        const wishes = [];
-        const wishForm = document.getElementById('wishForm');
-        const jsonOutput = document.getElementById('jsonOutput');
-        wishForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const name = document.getElementById('colleagueName').value;
-            const message = document.getElementById('wishMessage').value;
-            wishes.push({ name, message });
-            // Update the display
-            jsonOutput.textContent = 'const wishes = ' + JSON.stringify(wishes, null, 2) + ';';
-            // Reset the form for the next person
-            wishForm.reset();
-            document.getElementById('colleagueName').focus();
-            alert('Thank you! Your wish has been added.');
-        });
-</script>
+    <div class="container">
+        <div class="step">
+            <h1>Step 1: Scan</h1>
+            <p>Use your phone's camera to scan this QR code. It will open the AR surprise page.</p>
+            <!-- This QR code correctly links to your AR page -->
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://jaichavan999.github.io/bday/ar.html" alt="QR Code to AR Experience">
+        </div>
+        <div class="step">
+            <h1>Step 2: Point</h1>
+            <p>After you tap "Start", point your phone's camera at this AR Marker image to see the magic!</p>
+            <!-- This correctly displays your physical marker from its GitHub URL -->
+            <img class="marker" src="https://jaichavan999.github.io/bday/qr.jpg" alt="AR Marker">
+        </div>
+    </div>
 </body>
 </html>
