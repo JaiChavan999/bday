@@ -9,7 +9,7 @@
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
-        #desktop-marker-container {
+        #desktop-container {
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -20,9 +20,9 @@
             color: #333;
             text-align: center;
         }
-        #desktop-marker-container h1 { margin-bottom: 0.5em; }
-        #desktop-marker-container p { max-width: 400px; line-height: 1.5; }
-        #desktop-marker-container img {
+        #desktop-container h1 { margin-bottom: 0.5em; }
+        #desktop-container p { max-width: 400px; line-height: 1.5; }
+        #desktop-container img {
             width: 300px;
             height: 300px;
             border: 10px solid #fff;
@@ -33,14 +33,15 @@
 </head>
 <body>
 
-    <div id="desktop-marker-container">
+    <!-- This view is for desktops. It shows the marker image to be scanned. -->
+    <div id="desktop-container">
         <h1>A Special Surprise!</h1>
-        <p><strong>Step 1:</strong> Scan the QR code with your phone.<br><strong>Step 2:</strong> Point your phone back at this marker to see the magic!</p>
-        <!-- This is your hosted image, so it's guaranteed to match the pattern file -->
-    
+        <p><strong>Step 1:</strong> Scan the QR code with your phone.<br><strong>Step 2:</strong> Point your phone back at this image to see the magic.</p>
+        <!-- This now correctly points to your hosted qr.jpg image -->
+        <img src="https://jaichavan999.github.io/bday/qr.jpg" alt="AR Marker with QR Code">
     </div>
 
-    <!-- The AR content will be dynamically injected here by JavaScript on mobile devices -->
+    <!-- The AR content will be dynamically injected here on mobile devices -->
     <div id="ar-container"></div>
 
 
@@ -48,30 +49,26 @@
         const isMobile = window.innerWidth <= 768;
 
         if (isMobile) {
-            document.getElementById('desktop-marker-container').classList.add('hidden');
+            document.getElementById('desktop-container').classList.add('hidden');
             
             const arContainer = document.getElementById('ar-container');
 
-            const aframeScript = document.createElement('script');
-            aframeScript.src = "https://aframe.io/releases/1.3.0/aframe.min.js";
-            document.head.appendChild(aframeScript);
+            // Function to load scripts sequentially
+            function loadScript(src, onload) {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = onload;
+                document.head.appendChild(script);
+            }
 
-            aframeScript.onload = () => {
-                const arjsScript = document.createElement('script');
-                arjsScript.src = "https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js";
-                document.head.appendChild(arjsScript);
-
-                arjsScript.onload = () => {
-                    const wishesScript = document.createElement('script');
-                    wishesScript.src = "wishes.js";
-                    document.head.appendChild(wishesScript);
-                    
-                    wishesScript.onload = () => {
-                        // --- HTML for the AR scene is injected here ---
+            // Start loading scripts in order
+            loadScript("https://aframe.io/releases/1.3.0/aframe.min.js", () => {
+                loadScript("https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js", () => {
+                    loadScript("wishes.js", () => {
+                        // Inject the AR scene HTML after all scripts are loaded
                         arContainer.innerHTML = `
                             <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; text-align: center; padding: 1em;">
                                 <h2>Searching for Marker...</h2>
-                                <p>Point your camera at the marker on the desktop screen.</p>
                             </div>
                             <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
                                 <a-assets>
@@ -79,20 +76,21 @@
                                 </a-assets>
 
                                 <!--
-                                  *** THE CRUCIAL FIX IS HERE ***
-                                  We now use type="pattern" and point the url to your new .patt file.
+                                  *** THE DEFINITIVE FIX IS HERE ***
+                                  The 'url' now uses the full, absolute path to your pattern file on GitHub.
+                                  This removes all doubt about the file path.
                                 -->
-                                <a-marker type="pattern" url="pattern-qr.patt" id="marker">
+                                <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
                                     <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
                                 </a-marker>
                                 
                                 <a-entity camera></a-entity>
                             </a-scene>
                         `;
-                        runAR();
-                    }
-                }
-            };
+                        runAR(); // Now, run the AR logic
+                    });
+                });
+            });
         }
 
         function runAR() {
@@ -126,9 +124,9 @@
                     plane.setAttribute('color', '#007bff');
                     plane.setAttribute('width', '2');
                     plane.setAttribute('height', '1.2');
-                    plane.setAttribute('material', 'opacity', 0);
+                    plane.setAttribute('material', { opacity: 0 });
                     plane.setAttribute('animation__fade', { property: 'material.opacity', to: 0.85, dur: 800, easing: 'easeIn', delay: index * 600 });
-                    
+
                     const msgText = document.createElement('a-text');
                     msgText.setAttribute('value', wish.message);
                     msgText.setAttribute('color', 'white');
@@ -136,7 +134,7 @@
                     msgText.setAttribute('width', '1.8');
                     msgText.setAttribute('wrap-count', '30');
                     msgText.setAttribute('position', '0 0.2 0.1');
-                    msgText.setAttribute('text', 'opacity', 0);
+                    msgText.setAttribute('text', { opacity: 0 });
                     msgText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
 
                     const nameText = document.createElement('a-text');
@@ -145,7 +143,7 @@
                     nameText.setAttribute('align', 'right');
                     nameText.setAttribute('width', '1.8');
                     nameText.setAttribute('position', '0 -0.3 0.1');
-                    nameText.setAttribute('text', 'opacity', 0);
+                    nameText.setAttribute('text', { opacity: 0 });
                     nameText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
 
                     wishEntity.appendChild(plane);
@@ -158,5 +156,3 @@
     </script>
 </body>
 </html>
-
-
