@@ -3,120 +3,145 @@
 <head>
     <title>Anniversary Surprise</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- Scripts -->
+    <!-- Load required libraries -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         body { margin: 0; overflow: hidden; }
-        #start-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #2c3e50; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; color: white; font-family: sans-serif; text-align: center; padding: 1em; }
-        #start-button { font-size: 1.5em; padding: 15px 30px; border-radius: 10px; border: none; background-color: #007bff; color: white; cursor: pointer; margin-top: 1em;}
+        /* The AR scene is hidden by default. This is important. */
+        #ar-scene { display: none; }
+        /* The overlay that contains the start button */
+        #start-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
+        }
+        #start-button {
+            font-size: 1.5em;
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin-top: 1em;
+        }
     </style>
 </head>
 <body>
 
-    <div id="start-container">
-        <h1>Anniversary Surprise</h1>
+    <!-- This overlay is the only thing the user sees first -->
+    <div id="start-overlay">
+        <h1>A Surprise Awaits</h1>
         <p>Tap the button below to start the camera.</p>
         <button id="start-button">Start Experience</button>
     </div>
 
-    <!-- The AR scene container is initially empty -->
-    <div id="ar-scene-container" style="display: none;"></div>
+    <!-- 
+      The AR Scene is already in the HTML but hidden.
+      This is more reliable than creating it with JavaScript.
+    -->
+    <a-scene id="ar-scene" embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+        <a-assets>
+            <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
+        </a-assets>
+
+        <!-- Using the reliable, built-in HIRO marker for this definitive test -->
+        <a-marker preset="hiro" id="marker">
+            <a-sound id="sound-entity" src="#pop-sound" autoplay="false"></a-sound>
+        </a-marker>
+        
+        <a-entity camera></a-entity>
+    </a-scene>
 
     <script>
-        // The wishes are built directly into the file. This is reliable.
-        const wishes = [
-          { "name": "Jaisankar", "message": "Happy Anniversary! It has been an amazing year." },
-          { "name": "The Team", "message": "Congratulations on reaching this milestone!" },
-          { "name": "A Friend", "message": "Wishing you all the best for the years to come." }
-        ];
-
+        // All JavaScript logic is now in one place.
         window.addEventListener('load', () => {
-            const startContainer = document.querySelector('#start-container');
-            const arContainer = document.querySelector('#ar-scene-container');
+            const startOverlay = document.getElementById('start-overlay');
+            const arScene = document.getElementById('ar-scene');
             
-            document.querySelector('#start-button').addEventListener('click', () => {
-                startContainer.style.display = 'none';
-                arContainer.style.display = 'block';
+            // --- The wishes data is hardcoded here. It cannot fail to load. ---
+            const wishes = [
+              { "name": "Your Colleague", "message": "Happy Anniversary! It has been an amazing year." },
+              { "name": "The Team", "message": "Congratulations on this awesome milestone!" },
+              { "name": "A Friend", "message": "Wishing you all the best for many more years to come." }
+            ];
 
-                const sceneEl = document.createElement('a-scene');
-                
-                // We add this listener to ensure the scene is 100% ready before we look for the marker.
-                sceneEl.addEventListener('loaded', () => {
-                    const marker = document.querySelector('#marker');
-                    let hasAnimated = false;
-                    
-                    marker.addEventListener('markerFound', () => {
-                        if (!hasAnimated) {
-                            hasAnimated = true;
-                            displayWishesWithAnimation(wishes);
-                        }
-                    });
+            // When the user clicks the start button...
+            document.getElementById('start-button').addEventListener('click', () => {
+                // Hide the overlay
+                startOverlay.style.display = 'none';
+                // Show the AR Scene. This action of showing the scene will trigger the camera permission request.
+                arScene.style.display = 'block';
+
+                const marker = document.querySelector('#marker');
+                let hasAnimated = false;
+
+                marker.addEventListener('markerFound', () => {
+                    if (hasAnimated) return;
+                    hasAnimated = true;
+                    displayWishesWithAnimation(wishes);
                 });
+            });
 
-                // --- *** THE CRITICAL CHANGE FOR THIS TEST *** ---
-                sceneEl.innerHTML = `
-                    <a-assets>
-                        <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
-                    </a-assets>
-
-                    <!-- We are now using the default HIRO preset for testing. This removes all custom pattern file issues. -->
-                    <a-marker preset="hiro" id="marker">
-                        <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
-                    </a-marker>
-                    
-                    <a-entity camera></a-entity>
-                `;
+            function displayWishesWithAnimation(wishArray) {
+                const marker = document.querySelector('#marker');
+                const soundEffect = document.querySelector('#sound-entity');
                 
-                sceneEl.setAttribute('embedded', '');
-                sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
-                arContainer.appendChild(sceneEl);
-            });
-        });
+                wishArray.forEach((wish, index) => {
+                    setTimeout(() => {
+                        if (soundEffect) soundEffect.components.sound.playSound();
+                    }, index * 600);
 
-        // The animation function remains the same.
-        function displayWishesWithAnimation(wishArray) {
-            const marker = document.querySelector('#marker');
-            wishArray.forEach((wish, index) => {
-                setTimeout(() => {
-                    const soundEffect = document.querySelector('#sound-entity');
-                    if (soundEffect) soundEffect.components.sound.playSound();
-                }, index * 600);
-                const angle = index * ((2 * Math.PI) / wishArray.length);
-                const wishEntity = document.createElement('a-entity');
-                wishEntity.setAttribute('position', `${2.5 * Math.cos(angle)} 0.5 ${2.5 * Math.sin(angle)}`);
-                wishEntity.setAttribute('look-at', '[camera]');
-                wishEntity.setAttribute('scale', '0 0 0');
-                wishEntity.setAttribute('animation', { property: 'scale', to: '1 1 1', dur: 1000, easing: 'easeOutElastic', delay: index * 600 });
-                const plane = document.createElement('a-plane');
-                plane.setAttribute('color', '#007bff');
-                plane.setAttribute('width', '2');
-                plane.setAttribute('height', '1.2');
-                plane.setAttribute('material', { opacity: 0 });
-                plane.setAttribute('animation__fade', { property: 'material.opacity', to: 0.85, dur: 800, easing: 'easeIn', delay: index * 600 });
-                const msgText = document.createElement('a-text');
-                msgText.setAttribute('value', wish.message);
-                msgText.setAttribute('color', 'white');
-                msgText.setAttribute('align', 'center');
-                msgText.setAttribute('width', '1.8');
-                msgText.setAttribute('wrap-count', '30');
-                msgText.setAttribute('position', '0 0.2 0.1');
-                msgText.setAttribute('text', { opacity: 0 });
-                msgText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
-                const nameText = document.createElement('a-text');
-                nameText.setAttribute('value', `- ${wish.name}`);
-                nameText.setAttribute('color', '#ffc107');
-                nameText.setAttribute('align', 'right');
-                nameText.setAttribute('width', '1.8');
-                nameText.setAttribute('position', '0 -0.3 0.1');
-                nameText.setAttribute('text', { opacity: 0 });
-                nameText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
-                wishEntity.appendChild(plane);
-                wishEntity.appendChild(msgText);
-                wishEntity.appendChild(nameText);
-                marker.appendChild(wishEntity);
-            });
-        }
+                    const angle = index * ((2 * Math.PI) / wishArray.length);
+                    const wishEntity = document.createElement('a-entity');
+                    wishEntity.setAttribute('position', `${2.5 * Math.cos(angle)} 0.5 ${2.5 * Math.sin(angle)}`);
+                    wishEntity.setAttribute('look-at', '[camera]');
+                    wishEntity.setAttribute('scale', '0 0 0');
+                    wishEntity.setAttribute('animation', { property: 'scale', to: '1 1 1', dur: 1000, easing: 'easeOutElastic', delay: index * 600 });
+                    
+                    const plane = document.createElement('a-plane');
+                    plane.setAttribute('color', '#007bff');
+                    plane.setAttribute('width', '2');
+                    plane.setAttribute('height', '1.2');
+                    plane.setAttribute('material', { opacity: 0 });
+                    plane.setAttribute('animation__fade', { property: 'material.opacity', to: 0.85, dur: 800, easing: 'easeIn', delay: index * 600 });
+
+                    const msgText = document.createElement('a-text');
+                    msgText.setAttribute('value', wish.message);
+                    msgText.setAttribute('color', 'white');
+                    msgText.setAttribute('align', 'center');
+                    msgText.setAttribute('width', '1.8');
+                    msgText.setAttribute('wrap-count', '30');
+                    msgText.setAttribute('position', '0 0.2 0.1');
+                    msgText.setAttribute('text', { opacity: 0 });
+                    msgText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
+
+                    const nameText = document.createElement('a-text');
+                    nameText.setAttribute('value', `- ${wish.name}`);
+                    nameText.setAttribute('color', '#ffc107');
+                    nameText.setAttribute('align', 'right');
+                    nameText.setAttribute('width', '1.8');
+                    nameText.setAttribute('position', '0 -0.3 0.1');
+                    nameText.setAttribute('text', { opacity: 0 });
+                    nameText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
+
+                    wishEntity.appendChild(plane);
+                    wishEntity.appendChild(msgText);
+                    wishEntity.appendChild(nameText);
+                    marker.appendChild(wishEntity);
+                });
+            }
+        });
     </script>
 </body>
 </html>
