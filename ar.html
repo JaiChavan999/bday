@@ -3,12 +3,11 @@
 <head>
     <title>Anniversary Surprise</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- These scripts are needed for the AR experience -->
+    <!-- Scripts are loaded first -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         body { margin: 0; overflow: hidden; }
-        #ar-scene { display: none; }
         #start-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #2c3e50; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; color: white; font-family: sans-serif; text-align: center; padding: 1em; }
         #start-button { font-size: 1.5em; padding: 15px 30px; border-radius: 10px; border: none; background-color: #007bff; color: white; cursor: pointer; margin-top: 1em;}
     </style>
@@ -21,12 +20,11 @@
         <button id="start-button">Start Experience</button>
     </div>
 
+    <!-- The AR scene will be created and placed here by the script -->
     <div id="ar-scene-container" style="display: none;"></div>
 
     <script>
-        // --- *** THE DEFINITIVE FIX IS HERE *** ---
-        // The wishes data is now built directly into the file.
-        // It cannot fail to load.
+        // The wishes data is built-in. This is reliable.
         const wishes = [
           {
             "name": "Jaisankar",
@@ -41,8 +39,6 @@
             "message": "Wishing you all the best for the years to come."
           }
         ];
-        // To add more wishes, use your 'collect.html' page, copy the array it generates,
-        // and paste it here, replacing the content above.
 
         window.addEventListener('load', () => {
             const startContainer = document.querySelector('#start-container');
@@ -52,7 +48,25 @@
                 startContainer.style.display = 'none';
                 arContainer.style.display = 'block';
 
+                // Create the scene element
                 const sceneEl = document.createElement('a-scene');
+                
+                // --- *** THE DEFINITIVE FIX IS HERE *** ---
+                // Add an event listener to wait for the A-Frame scene to be fully loaded and initialized.
+                sceneEl.addEventListener('loaded', () => {
+                    // Now that the scene is 100% ready, we can safely find the marker.
+                    const marker = document.querySelector('#marker');
+                    let hasAnimated = false;
+                    
+                    marker.addEventListener('markerFound', () => {
+                        if (!hasAnimated) {
+                            hasAnimated = true;
+                            displayWishesWithAnimation(wishes);
+                        }
+                    });
+                });
+
+                // Set the inner HTML of the scene
                 sceneEl.innerHTML = `
                     <a-assets>
                         <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
@@ -62,23 +76,17 @@
                     </a-marker>
                     <a-entity camera></a-entity>
                 `;
+                
+                // Set the AR.js attributes
                 sceneEl.setAttribute('embedded', '');
                 sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
-                arContainer.appendChild(sceneEl);
-
-                const marker = document.querySelector('#marker');
-                let hasAnimated = false;
                 
-                marker.addEventListener('markerFound', () => {
-                    if (!hasAnimated) {
-                        hasAnimated = true;
-                        // The 'wishes' variable is now guaranteed to exist.
-                        displayWishesWithAnimation(wishes);
-                    }
-                });
+                // Add the fully prepared scene to the page
+                arContainer.appendChild(sceneEl);
             });
         });
 
+        // This animation function is correct and does not need changes.
         function displayWishesWithAnimation(wishArray) {
             const marker = document.querySelector('#marker');
             wishArray.forEach((wish, index) => {
