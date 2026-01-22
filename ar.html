@@ -1,99 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Happy Aniversary!</title>
+    <title>Anniversary Surprise!</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-        #desktop-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100vw;
-            height: 100vh;
-            background-color: #f0f0f0;
-            color: #333;
-            text-align: center;
-        }
-        #desktop-container h1 { margin-bottom: 0.5em; }
-        #desktop-container p { max-width: 400px; line-height: 1.5; }
-        #desktop-container img {
-            width: 300px;
-            height: 300px;
-            border: 10px solid #fff;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        .hidden { display: none !important; }
-    </style>
+    
+    <!-- Load scripts directly for better reliability on mobile -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="wishes.js"></script>
 </head>
-<body>
 
-    <!-- This view is for desktops. It shows the marker image to be scanned. -->
-    <div id="desktop-container">
-        <h1>A Special Surprise!</h1>
-        <p><strong>Step 1:</strong> Scan the QR code with your phone.<br><strong>Step 2:</strong> Point your phone back at this image to see the magic.</p>
-        <!-- This now correctly points to your hosted qr.jpg image -->
-        <img src="https://jaichavan999.github.io/bday/qr.jpg" alt="AR Marker with QR Code">
+<body style="margin: 0; overflow: hidden;">
+
+    <!-- This loading screen will be hidden once the marker is found -->
+    <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 10000; text-align: center; padding: 1em; font-family: sans-serif;">
+        <p>Searching for AR marker...</p>
     </div>
 
-    <!-- The AR content will be dynamically injected here on mobile devices -->
-    <div id="ar-container"></div>
+    <!-- 
+      *** THE MAIN FIX IS HERE ***
+      1. 'debugUIEnabled: true' -> This will show a black debug box on the screen.
+      2. 'url' uses the full path to your .patt file to avoid loading errors.
+    -->
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
 
+        <a-assets>
+            <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
+        </a-assets>
+
+        <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
+            <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
+        </a-marker>
+        
+        <a-entity camera></a-entity>
+    </a-scene>
 
     <script>
-        const isMobile = window.innerWidth <= 768;
-
-        if (isMobile) {
-            document.getElementById('desktop-container').classList.add('hidden');
-            
-            const arContainer = document.getElementById('ar-container');
-
-            // Function to load scripts sequentially
-            function loadScript(src, onload) {
-                const script = document.createElement('script');
-                script.src = src;
-                script.onload = onload;
-                document.head.appendChild(script);
-            }
-
-            // Start loading scripts in order
-            loadScript("https://aframe.io/releases/1.3.0/aframe.min.js", () => {
-                loadScript("https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js", () => {
-                    loadScript("wishes.js", () => {
-                        // Inject the AR scene HTML after all scripts are loaded
-                        arContainer.innerHTML = `
-                            <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; text-align: center; padding: 1em;">
-                                <h2>Searching for Marker...</h2>
-                            </div>
-                            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-                                <a-assets>
-                                    <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
-                                </a-assets>
-
-                                <!--
-                                  *** THE DEFINITIVE FIX IS HERE ***
-                                  The 'url' now uses the full, absolute path to your pattern file on GitHub.
-                                  This removes all doubt about the file path.
-                                -->
-                                <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
-                                    <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
-                                </a-marker>
-                                
-                                <a-entity camera></a-entity>
-                            </a-scene>
-                        `;
-                        runAR(); // Now, run the AR logic
-                    });
-                });
-            });
-        }
-
-        function runAR() {
+        // Simplified script that runs after the page loads
+        window.addEventListener('load', function () {
             const marker = document.querySelector('#marker');
             const loadingOverlay = document.querySelector('#loading-overlay');
             const soundEffect = document.querySelector('#sound-entity');
@@ -108,6 +52,7 @@
             });
 
             function displayWishesWithAnimation(wishArray) {
+                // Animation and sound logic is unchanged
                 wishArray.forEach((wish, index) => {
                     setTimeout(() => {
                         if (soundEffect) soundEffect.components.sound.playSound();
@@ -152,8 +97,7 @@
                     marker.appendChild(wishEntity);
                 });
             }
-        }
+        });
     </script>
 </body>
 </html>
-
