@@ -3,12 +3,9 @@
 <head>
     <title>Anniversary Surprise</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- These scripts are loaded first -->
+    <!-- These scripts are needed for the AR experience -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    
-    <!-- This script tag will be created dynamically below to ensure it bypasses the cache -->
-
     <style>
         body { margin: 0; overflow: hidden; }
         #ar-scene { display: none; }
@@ -27,62 +24,57 @@
     <div id="ar-scene-container" style="display: none;"></div>
 
     <script>
-        // --- THIS SCRIPT BLOCK IS THE FINAL FIX ---
-
-        function loadWishesScript(callback) {
-            const script = document.createElement('script');
-            // *** THE DEFINITIVE FIX IS HERE: Cache-Busting Query Parameter ***
-            // This adds a unique timestamp to the URL, forcing the browser to download a fresh copy of wishes.js
-            script.src = `https://jaichavan999.github.io/bday/wishes.js?t=${new Date().getTime()}`;
-            
-            script.onload = () => callback(null);
-            script.onerror = () => callback(new Error("Network error: Could not load 'wishes.js'. Please double-check the file name and its location on GitHub."));
-
-            document.head.appendChild(script);
-        }
+        // --- *** THE DEFINITIVE FIX IS HERE *** ---
+        // The wishes data is now built directly into the file.
+        // It cannot fail to load.
+        const wishes = [
+          {
+            "name": "Jaisankar",
+            "message": "Happy Anniversary! It has been an amazing year."
+          },
+          {
+            "name": "The Team",
+            "message": "Congratulations on reaching this milestone!"
+          },
+          {
+            "name": "A Friend",
+            "message": "Wishing you all the best for the years to come."
+          }
+        ];
+        // To add more wishes, use your 'collect.html' page, copy the array it generates,
+        // and paste it here, replacing the content above.
 
         window.addEventListener('load', () => {
             const startContainer = document.querySelector('#start-container');
             const arContainer = document.querySelector('#ar-scene-container');
             
             document.querySelector('#start-button').addEventListener('click', () => {
-                loadWishesScript((error) => {
-                    if (error) {
-                        alert(error.message);
-                        return;
+                startContainer.style.display = 'none';
+                arContainer.style.display = 'block';
+
+                const sceneEl = document.createElement('a-scene');
+                sceneEl.innerHTML = `
+                    <a-assets>
+                        <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
+                    </a-assets>
+                    <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
+                        <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
+                    </a-marker>
+                    <a-entity camera></a-entity>
+                `;
+                sceneEl.setAttribute('embedded', '');
+                sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
+                arContainer.appendChild(sceneEl);
+
+                const marker = document.querySelector('#marker');
+                let hasAnimated = false;
+                
+                marker.addEventListener('markerFound', () => {
+                    if (!hasAnimated) {
+                        hasAnimated = true;
+                        // The 'wishes' variable is now guaranteed to exist.
+                        displayWishesWithAnimation(wishes);
                     }
-
-                    if (typeof window.wishes === 'undefined' || !Array.isArray(window.wishes) || window.wishes.length === 0) {
-                        alert("Data Error: The 'wishes.js' file is empty or formatted incorrectly. Please use the 'collect.html' page to create the content and paste it into 'wishes.js' on GitHub.");
-                        return;
-                    }
-
-                    startContainer.style.display = 'none';
-                    arContainer.style.display = 'block';
-
-                    const sceneEl = document.createElement('a-scene');
-                    sceneEl.innerHTML = `
-                        <a-assets>
-                            <audio id="pop-sound" src="https://cdn.glitch.global/e17a3423-f34a-47d3-b43e-999d394b9b94/pop.mp3?v=1643634351114" preload="auto"></audio>
-                        </a-assets>
-                        <a-marker type="pattern" url="https://jaichavan999.github.io/bday/pattern-qr.patt" id="marker">
-                            <a-sound id="sound-entity" src="#pop-sound" autoplay="false" position="0 1 0"></a-sound>
-                        </a-marker>
-                        <a-entity camera></a-entity>
-                    `;
-                    sceneEl.setAttribute('embedded', '');
-                    sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;');
-                    arContainer.appendChild(sceneEl);
-
-                    const marker = document.querySelector('#marker');
-                    let hasAnimated = false;
-                    
-                    marker.addEventListener('markerFound', () => {
-                        if (!hasAnimated) {
-                            hasAnimated = true;
-                            displayWishesWithAnimation(window.wishes);
-                        }
-                    });
                 });
             });
         });
@@ -94,18 +86,21 @@
                     const soundEffect = document.querySelector('#sound-entity');
                     if (soundEffect) soundEffect.components.sound.playSound();
                 }, index * 600);
+
                 const angle = index * ((2 * Math.PI) / wishArray.length);
                 const wishEntity = document.createElement('a-entity');
                 wishEntity.setAttribute('position', `${2.5 * Math.cos(angle)} 0.5 ${2.5 * Math.sin(angle)}`);
                 wishEntity.setAttribute('look-at', '[camera]');
                 wishEntity.setAttribute('scale', '0 0 0');
                 wishEntity.setAttribute('animation', { property: 'scale', to: '1 1 1', dur: 1000, easing: 'easeOutElastic', delay: index * 600 });
+                
                 const plane = document.createElement('a-plane');
                 plane.setAttribute('color', '#007bff');
                 plane.setAttribute('width', '2');
                 plane.setAttribute('height', '1.2');
                 plane.setAttribute('material', { opacity: 0 });
                 plane.setAttribute('animation__fade', { property: 'material.opacity', to: 0.85, dur: 800, easing: 'easeIn', delay: index * 600 });
+
                 const msgText = document.createElement('a-text');
                 msgText.setAttribute('value', wish.message);
                 msgText.setAttribute('color', 'white');
@@ -115,6 +110,7 @@
                 msgText.setAttribute('position', '0 0.2 0.1');
                 msgText.setAttribute('text', { opacity: 0 });
                 msgText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
+
                 const nameText = document.createElement('a-text');
                 nameText.setAttribute('value', `- ${wish.name}`);
                 nameText.setAttribute('color', '#ffc107');
@@ -123,6 +119,7 @@
                 nameText.setAttribute('position', '0 -0.3 0.1');
                 nameText.setAttribute('text', { opacity: 0 });
                 nameText.setAttribute('animation__fade', { property: 'text.opacity', to: 1, dur: 800, easing: 'easeIn', delay: 200 + index * 600 });
+
                 wishEntity.appendChild(plane);
                 wishEntity.appendChild(msgText);
                 wishEntity.appendChild(nameText);
